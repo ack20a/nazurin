@@ -377,3 +377,39 @@ class WebAPI(BaseAPI):
         if reason in ERROR_MESSAGES:
             return ERROR_MESSAGES[reason]
         return reason
+
+    @staticmethod
+    def _get_videos(media: dict) -> list:
+        videos = []
+        if media['type'] == 'video' or media['type'] == 'animated_gif':
+            video_info = media['video_info']
+            variants = sorted(
+                [v for v in video_info['variants'] if v.get('bitrate')],
+                key=lambda v: v['bitrate'],
+                reverse=True
+            )
+            if variants:
+                best_quality = variants[0]
+                videos.append({
+                    'url': best_quality['url'],
+                    'thumbnail': media['media_url_https'],
+                    'bitrate': best_quality.get('bitrate'),
+                    'duration': video_info.get('duration_millis', 0)
+                })
+        return videos
+
+    async def get_tweet(self, status_id: str):
+        # ... 现有代码 ...
+        media = tweet.get("media", {}).get("media", [])
+        
+        images = []
+        videos = []
+        for medium in media:
+            if medium["type"] == "photo":
+                images.append(self._get_image(medium))
+            elif medium["type"] in ("video", "animated_gif"):
+                videos.extend(self._get_videos(medium))
+        
+        # 合并媒体项
+        items = images + videos
+        # ... 后续处理 ...
